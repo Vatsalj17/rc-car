@@ -1,0 +1,7 @@
+build/
+managed_components/
+components/
+*.lock
+.cache/
+*.old
+*.h
