@@ -3,5 +3,5 @@ managed_components/
 components/
 *.lock
 .cache/
-*.old
+*old*
 *.h
