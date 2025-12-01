@@ -432,7 +432,7 @@ static void initialise_wifi_softap(void) {
 
     wifi_config_t wifi_config = {
         .ap = {
-            .ssid = "ToyCar_AP",
+            .ssid = "Khilona",
             .ssid_len = 0,
             .channel = 1,
             .authmode = WIFI_AUTH_OPEN,
@@ -448,7 +448,7 @@ static void initialise_wifi_softap(void) {
     esp_wifi_set_config(WIFI_IF_AP, &wifi_config);
     esp_wifi_start();
 
-    ESP_LOGI(TAG, "WiFi SoftAP started. Connect to ToyCar_AP");
+    ESP_LOGI(TAG, "WiFi SoftAP started. Connect to Khilona");
 }
 
 /* ------------------------- APP MAIN ------------------------- */
@@ -495,5 +495,5 @@ void app_main(void) {
 
     xTaskCreate(ultrasonic_task, "ultra", 4096, NULL, 5, NULL);
 
-    ESP_LOGI(TAG, "Car ready. Default: MANUAL. Connect to ToyCar_AP and open http://192.168.4.1/");
+    ESP_LOGI(TAG, "Car ready. Default: MANUAL. Connect to Khilona and open http://192.168.4.1/");
 }
