@@ -5,3 +5,5 @@ components/
 .cache/
 *old*
 *.h
+doc/
+app/

@@ -1,11 +1,3 @@
-/*
- * Mini Project (ADAS Car Implementation)
- * Group No. 65
- * Made by:- Yuvraj Kumar, Ume Kulsoom, Vatsal Jaiswal
- */
-
-
-
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -27,7 +19,6 @@
 
 static const char *TAG = "toy_car";
 
-/* ------------------------- PIN CONFIG ------------------------- */
 #define IN1_GPIO 12
 #define IN2_GPIO 13
 #define IN3_GPIO 14
@@ -38,7 +29,6 @@ static const char *TAG = "toy_car";
 #define TRIG_PIN 25
 #define ECHO_PIN 26
 
-/* ------------------------- SPEED + THRESHOLDS ------------------------- */
 #define MANUAL_MIN_SPEED 40
 #define MANUAL_MAX_SPEED 100
 
@@ -51,7 +41,6 @@ static const char *TAG = "toy_car";
 
 #define PWM_MAX_DUTY 8191
 
-/* ------------------------- GLOBAL STATE ------------------------- */
 typedef enum { STATE_STOP = 0, STATE_FORWARD, STATE_BACKWARD, STATE_LEFT, STATE_RIGHT } motor_state_t;
 static volatile motor_state_t g_state = STATE_STOP;
 
@@ -59,10 +48,9 @@ typedef enum { MODE_MANUAL = 0, MODE_AUTOMATIC = 1 } car_mode_t;
 static volatile car_mode_t g_mode = MODE_MANUAL;
 
 static volatile int g_auto_running = 1;
-static volatile int g_manual_speed = 70;   // default (within 40-100)
-static volatile int g_auto_speed = 70;     // default (within 50-90)
+static volatile int g_manual_speed = 70;
+static volatile int g_auto_speed = 70;
 
-/* ------------------------- PWM & MOTOR ------------------------- */
 #define LEDC_TIMER      LEDC_TIMER_0
 #define LEDC_MODE       LEDC_HIGH_SPEED_MODE
 #define LEDC_DUTY_RES   LEDC_TIMER_13_BIT
@@ -122,7 +110,6 @@ static void motor_gpio_init(void) {
     ledc_init_pwm();
 }
 
-/* Motor commands use the current speeds: manual commands use g_manual_speed, automatic forward uses g_auto_speed */
 static void motor_set_stop(void) {
     gpio_set_level(IN1_GPIO,0);
     gpio_set_level(IN2_GPIO,0);
@@ -178,7 +165,6 @@ static void motor_turn_right(int spd){
     ESP_LOGI(TAG, "CMD: RIGHT speed=%d", spd);
 }
 
-/* ------------------------- ULTRASONIC ------------------------- */
 static float get_distance_cm(void) {
     gpio_set_level(TRIG_PIN,0); ets_delay_us(2);
     gpio_set_level(TRIG_PIN,1); ets_delay_us(10);
@@ -194,7 +180,6 @@ static float get_distance_cm(void) {
     return (count*0.0343f)/2.0f;
 }
 
-/* ------------------------- ULTRASONIC TASK ------------------------- */
 static void ultrasonic_task(void *p){
     (void)p;
     ESP_LOGI(TAG, "Ultrasonic task started");
@@ -203,7 +188,6 @@ static void ultrasonic_task(void *p){
 
         if(d < 0){
             ESP_LOGW(TAG, "Sensor timeout");
-            // On timeout: conservative stop only in manual and when moving forward/left/right
             if(g_mode == MODE_MANUAL &&
                (g_state == STATE_FORWARD || g_state == STATE_LEFT || g_state == STATE_RIGHT)){
                 motor_set_stop();
@@ -212,22 +196,17 @@ static void ultrasonic_task(void *p){
             continue;
         }
 
-        /* AUTOMATIC MODE */
         if(g_mode == MODE_AUTOMATIC && g_auto_running){
             if(d < AUTO_TURN_THRESHOLD_CM){
-                // Obstacle: turn right at hardcoded slow speed
                 motor_turn_right(AUTO_TURN_SPEED);
-                // short turn pulse, then re-evaluate
                 vTaskDelay(pdMS_TO_TICKS(250));
                 continue;
             } else {
-                // Path clear: go forward with auto speed slider value
                 motor_set_forward(g_auto_speed);
             }
         }
 
-        /* MANUAL SAFETY: only prevent crashes when moving forward/left/right (not backward) */
-        if(g_mode == MODE_MANUAL){
+        if(g_mode == MODE_MANUAL) {
             if(d < MANUAL_STOP_THRESHOLD_CM &&
                (g_state == STATE_FORWARD || g_state == STATE_LEFT || g_state == STATE_RIGHT)){
                 motor_set_stop();
@@ -238,7 +217,6 @@ static void ultrasonic_task(void *p){
     }
 }
 
-/* ------------------------- HTML (pages include sliders & JS) ------------------------- */
 static const char *manual_html =
 "<!doctype html><html><head><meta name='viewport' content='width=device-width,initial-scale=1'>"
 "<title>Toy Car — MANUAL</title>"
@@ -281,7 +259,6 @@ static const char *auto_html =
 "function setAutoSpeed(v){fetch('/set_auto_speed?val='+v);} "
 "</script></body></html>";
 
-/* ------------------------- HTTP HANDLERS ------------------------- */
 
 static esp_err_t root_get_handler(httpd_req_t *req) {
     if (g_mode == MODE_MANUAL) {
@@ -294,7 +271,6 @@ static esp_err_t root_get_handler(httpd_req_t *req) {
     return ESP_OK;
 }
 
-/* /cmd?do=forward|backward|left|right|stop  -> uses current manual speed for manual commands */
 static esp_err_t cmd_handler(httpd_req_t *req) {
     char buf[128];
     char val[32];
@@ -388,7 +364,6 @@ static esp_err_t auto_control_handler(httpd_req_t *req) {
     return ESP_OK;
 }
 
-/* Start HTTP server and register URIs */
 static httpd_handle_t start_webserver(void) {
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
     httpd_handle_t server = NULL;
@@ -421,7 +396,6 @@ static httpd_handle_t start_webserver(void) {
     return server;
 }
 
-/* ------------------------- SIMPLE Wi-Fi SOFTAP ------------------------- */
 static void initialise_wifi_softap(void) {
     esp_netif_init();
     esp_event_loop_create_default();
@@ -451,7 +425,6 @@ static void initialise_wifi_softap(void) {
     ESP_LOGI(TAG, "WiFi SoftAP started. Connect to Khilona");
 }
 
-/* ------------------------- APP MAIN ------------------------- */
 void app_main(void) {
     esp_err_t err = nvs_flash_init();
     if (err == ESP_ERR_NVS_NO_FREE_PAGES || err == ESP_ERR_NVS_NEW_VERSION_FOUND) {
@@ -462,7 +435,6 @@ void app_main(void) {
     motor_gpio_init();
     motor_set_stop();
 
-    /* Ultrasonic pins */
     gpio_config_t trig_conf = {
         .pin_bit_mask = (1ULL << TRIG_PIN),
         .mode = GPIO_MODE_OUTPUT,
@@ -481,17 +453,15 @@ void app_main(void) {
     };
     gpio_config(&echo_conf);
 
-    /* WiFi + server */
     initialise_wifi_softap();
     start_webserver();
 
-    /* Defaults: manual page shown, manual default speed 70, auto default 70 (within ranges) */
     g_mode = MODE_MANUAL;
     if (g_manual_speed < MANUAL_MIN_SPEED) g_manual_speed = MANUAL_MIN_SPEED;
     if (g_manual_speed > MANUAL_MAX_SPEED) g_manual_speed = MANUAL_MAX_SPEED;
     if (g_auto_speed < AUTO_MIN_SPEED) g_auto_speed = AUTO_MIN_SPEED;
     if (g_auto_speed > AUTO_MAX_SPEED) g_auto_speed = AUTO_MAX_SPEED;
-    g_auto_running = 0; /* per your earlier request: default manual; when switched to auto it should run by default */
+    g_auto_running = 0;
 
     xTaskCreate(ultrasonic_task, "ultra", 4096, NULL, 5, NULL);
 
