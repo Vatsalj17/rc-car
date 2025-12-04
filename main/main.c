@@ -185,13 +185,14 @@ static void ultrasonic_task(void *p){
     ESP_LOGI(TAG, "Ultrasonic task started");
     while(1){
         float d = get_distance_cm();
+        // ESP_LOGI(TAG, "distance: %f\n", d);
 
-        if(d < 0){
+        if(d < 0) {
             ESP_LOGW(TAG, "Sensor timeout");
-            if(g_mode == MODE_MANUAL &&
-               (g_state == STATE_FORWARD || g_state == STATE_LEFT || g_state == STATE_RIGHT)){
-                motor_set_stop();
-            }
+            // if(g_mode == MODE_MANUAL &&
+            //    (g_state == STATE_FORWARD || g_state == STATE_LEFT || g_state == STATE_RIGHT)){
+            //     motor_set_stop();
+            // }
             vTaskDelay(pdMS_TO_TICKS(80));
             continue;
         }
@@ -218,47 +219,76 @@ static void ultrasonic_task(void *p){
 }
 
 static const char *manual_html =
-"<!doctype html><html><head><meta name='viewport' content='width=device-width,initial-scale=1'>"
-"<title>Toy Car — MANUAL</title>"
-"<style>button{width:110px;height:60px;margin:6px;font-size:16px;}input[type=range]{width:80%}</style>"
+"<!doctype html><html><head>"
+"<meta name='viewport' content='width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0'>"
+"<title>RC MANUAL</title>"
+"<style>"
+"body { background-color: #1e1e2e; color: #cdd6f4; font-family: 'Courier New', monospace; text-align: center; margin: 0; padding: 20px; user-select: none; }"
+"h3 { color: #89b4fa; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px; }"
+".card { background: #313244; border-radius: 16px; padding: 20px; box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3); margin-bottom: 20px; }"
+"label { font-size: 1.2rem; font-weight: bold; color: #a6e3a1; }"
+"input[type=range] { width: 100%; height: 10px; background: #45475a; border-radius: 5px; outline: none; -webkit-appearance: none; margin: 20px 0; }"
+"input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 25px; height: 25px; background: #a6e3a1; border-radius: 50%; cursor: pointer; }"
+".d-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; max-width: 300px; margin: 0 auto; }"
+"button { border: none; border-radius: 12px; font-size: 18px; font-weight: bold; color: white; cursor: pointer; transition: transform 0.1s, box-shadow 0.1s; height: 70px; width: 100%; box-shadow: 0 5px 0 rgba(0,0,0,0.5); }"
+"button:active { transform: translateY(4px); box-shadow: 0 1px 0 rgba(0,0,0,0.5); }"
+".btn-move { background-color: #313244; border: 2px solid #89b4fa; color: #89b4fa; }"
+".btn-stop { background-color: #f38ba8; color: #1e1e2e; }"
+".btn-mode { background-color: #fab387; color: #1e1e2e; width: 100%; padding: 15px; margin-top: 10px; }"
+"</style>"
 "</head><body>"
-"<h3>MANUAL MODE</h3>"
-"<div>"
-"<label>Speed: <span id='mval'>70</span>%</label><br>"
-"<input id='mslider' type='range' min='40' max='100' value='70' oninput='mval.innerText=value; setManualSpeed(value)'>"
+"<h3>Manual Pilot</h3>"
+"<div class='card'>"
+  "<label>THRUST: <span id='mval'>70</span>%</label>"
+  "<input id='mslider' type='range' min='40' max='100' value='70' oninput='mval.innerText=value; setManualSpeed(value)'>"
 "</div>"
-"<div>"
-"<button onclick=\"cmd('forward')\">Forward</button>"
-"<button onclick=\"cmd('backward')\">Backward</button><br>"
-"<button onclick=\"cmd('left')\">Left</button>"
-"<button onclick=\"cmd('right')\">Right</button><br>"
-"<button onclick=\"cmd('stop')\">Stop</button>"
-"</div><hr>"
-"<button onclick=\"location.href='/switch_auto'\">Switch to AUTOMATIC</button>"
+"<div class='d-pad'>"
+  "<div></div> <button class='btn-move' onclick=\"cmd('forward')\">&#9650;</button> <div></div>"
+  "<button class='btn-move' onclick=\"cmd('left')\">&#9664;</button>"
+  "<button class='btn-stop' onclick=\"cmd('stop')\">STOP</button>"
+  "<button class='btn-move' onclick=\"cmd('right')\">&#9654;</button>"
+  "<div></div> <button class='btn-move' onclick=\"cmd('backward')\">&#9660;</button> <div></div>"
+"</div>"
+"<br><hr style='border-color: #45475a;'>"
+"<button class='btn-mode' onclick=\"location.href='/switch_auto'\">ENGAGE AUTOPILOT</button>"
 "<script>"
 "function cmd(c){fetch('/cmd?do='+c);} "
 "function setManualSpeed(v){fetch('/set_manual_speed?val='+v);} "
 "</script></body></html>";
 
 static const char *auto_html =
-"<!doctype html><html><head><meta name='viewport' content='width=device-width,initial-scale=1'>"
-"<title>Toy Car — AUTO</title>"
-"<style>button{width:140px;height:60px;margin:6px;font-size:16px;}input[type=range]{width:80%}</style>"
+"<!doctype html><html><head>"
+"<meta name='viewport' content='width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0'>"
+"<title>RC AUTO</title>"
+"<style>"
+"body { background-color: #1e1e2e; color: #cdd6f4; font-family: 'Courier New', monospace; text-align: center; margin: 0; padding: 20px; }"
+"h3 { color: #a6e3a1; text-transform: uppercase; letter-spacing: 2px; }"
+".card { background: #313244; border-radius: 16px; padding: 20px; box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3); margin-bottom: 20px; border: 1px solid #a6e3a1; }"
+"label { font-size: 1.2rem; font-weight: bold; color: #a6e3a1; }"
+"input[type=range] { width: 100%; height: 10px; background: #45475a; border-radius: 5px; outline: none; -webkit-appearance: none; margin: 20px 0; }"
+"input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 25px; height: 25px; background: #f9e2af; border-radius: 50%; cursor: pointer; }"
+".btn-group { display: flex; gap: 10px; justify-content: center; }"
+"button { border: none; border-radius: 12px; font-size: 18px; font-weight: bold; cursor: pointer; transition: transform 0.1s; height: 60px; flex: 1; box-shadow: 0 5px 0 rgba(0,0,0,0.5); }"
+"button:active { transform: translateY(4px); box-shadow: 0 1px 0 rgba(0,0,0,0.5); }"
+".btn-pause { background-color: #f38ba8; color: #1e1e2e; }"
+".btn-resume { background-color: #a6e3a1; color: #1e1e2e; }"
+".btn-mode { background-color: #89b4fa; color: #1e1e2e; width: 100%; margin-top: 20px; }"
+"</style>"
 "</head><body>"
-"<h3>AUTOMATIC MODE</h3>"
-"<div>"
-"<label>Auto Speed: <span id='aval'>70</span>%</label><br>"
-"<input id='aslider' type='range' min='50' max='90' value='70' oninput='aval.innerText=value; setAutoSpeed(value)'>"
+"<h3>AI Autopilot</h3>"
+"<div class='card'>"
+  "<label>CRUISE SPEED: <span id='aval'>70</span>%</label>"
+  "<input id='aslider' type='range' min='50' max='90' value='70' oninput='aval.innerText=value; setAutoSpeed(value)'>"
 "</div>"
-"<div>"
-"<button onclick=\"fetch('/auto?do=pause')\">Pause</button>"
-"<button onclick=\"fetch('/auto?do=resume')\">Resume</button>"
-"</div><hr>"
-"<button onclick=\"location.href='/switch_manual'\">Exit Automatic (Go Manual)</button>"
+"<div class='btn-group'>"
+  "<button class='btn-pause' onclick=\"fetch('/auto?do=pause')\">PAUSE</button>"
+  "<button class='btn-resume' onclick=\"fetch('/auto?do=resume')\">RESUME</button>"
+"</div>"
+"<br><hr style='border-color: #45475a;'>"
+"<button class='btn-mode' onclick=\"location.href='/switch_manual'\">RETURN TO MANUAL</button>"
 "<script>"
 "function setAutoSpeed(v){fetch('/set_auto_speed?val='+v);} "
 "</script></body></html>";
-
 
 static esp_err_t root_get_handler(httpd_req_t *req) {
     if (g_mode == MODE_MANUAL) {
